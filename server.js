@@ -6,6 +6,6 @@ const PORT = 8090;
 
 http.createServer(function(req, res) {
     file.serve(req, res);
-}).listen(PORT);
+}).listen(PORT, '127.0.0.1');
 
 console.log(`Server running on port ${PORT}`);
