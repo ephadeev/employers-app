@@ -1,34 +1,25 @@
-fetch('./departments/0_department.json')
-    .then(res => res.json())
-    .then(data => {
-        console.log(data);
-    });
-fetch('./departments/1_department.json')
-    .then(res => res.json())
-    .then(data => {
-        console.log(data);
-    });
-fetch('./departments/2_department.json')
-    .then(res => res.json())
-    .then(data => {
-        console.log(data);
-    });
-fetch('./departments/3_department.json')
-    .then(res => res.json())
-    .then(data => {
-        console.log(data);
-    });
-fetch('./departments/4_department.json')
-    .then(res => res.json())
-    .then(data => {
-        console.log(data);
-    });
-fetch('./departments/5_department.json')
-    .then(res => res.json())
-    .then(data => {
-        console.log(data);
-    });
+"use strict";
 
+var urls = [
+    './departments/0_department.json',
+    './departments/1_department.json',
+    './departments/2_department.json',
+    './departments/3_department.json',
+    './departments/4_department.json',
+    './departments/5_department.json'
+];
+var requests = urls.map(url => {
+    return fetch(url).then(resp => resp.json());
+});
+var employers = Promise.all(requests)
+    .then(responses => {
+        return responses.reduce((acc, emp) => {
+            emp.forEach(el => {
+                acc.push(el);
+            });
+            return acc;
+        }, []);
+    });
 /** Идеи: можно сделать форму регистрации, и если залогинен админ, то будет возможность добавлять новых сотрудников.
  ** Данные по людям вынести в БД Mongo и прикрутить к проекту. */
 var depts = [
@@ -71,6 +62,8 @@ const traverseTree = (elements, parentEl) => {
             let ulEl = document.createElement(`ul`);
             liEl.appendChild(ulEl);
             traverseTree(el.children, ulEl);
+        } else {
+            liEl.innerHTML = `${el.name}`;
         }
     })
 };
@@ -80,7 +73,8 @@ traverseTree(getTree(depts), hrTree);
 
 // Right
 var hrItem2 = document.getElementsByClassName(`hr__item`)[1],
-    table = document.createElement(`table`);
+    table = document.createElement(`table`),
+    curRate = 1;
 
 // THEAD
 const makeTableHead = (parentElement) => {
@@ -123,10 +117,11 @@ let clearTable = () => {
 };
 
 var lastEventTarget = null;
-let addDataInTable = (event) => {
-    console.log(`data id: ${event.target.dataset.id}`);
+
+async function addDataInTable(event) {
     lastEventTarget = event.target;
-    let filteredEmployers = employers.filter((employer) => {
+    let emps = await employers;
+    let filteredEmployers = emps.filter((employer) => {
         return String(employer.dept_unit_id) === event.target.dataset.id;
     });
 
@@ -150,28 +145,25 @@ let addDataInTable = (event) => {
                     elem.innerText = `${emp.tel}`;
                     break;
                 case 3:
-                    elem.innerText = `${emp.salary}`;
+                    elem.innerText = `${(emp.salary / curRate).toFixed(2)}`;
                     break;
             }
         });
     });
-};
+}
 
 var otherLastEventTarget = null;
 const makeTextGold = (event) => {
     if (!otherLastEventTarget) {
-        console.log(`if: lastT: ${otherLastEventTarget}, curT: ${event.target.innerText}`);
         otherLastEventTarget = event.target;
         event.target.style.color = "gold";
         event.cancelBubble = true;
     } else if (otherLastEventTarget !== event.target) {
-        console.log(`else if: lastT: ${otherLastEventTarget.innerText}, curT: ${event.target.innerText}`);
         otherLastEventTarget.style.color = "black";
         event.target.style.color = "gold";
         otherLastEventTarget = event.target;
         event.cancelBubble = true;
     } else {
-        console.log(`else: lastT: ${otherLastEventTarget.innerText}, curT: ${event.target.innerText}`);
         otherLastEventTarget.style.color = "black";
         event.target.style.color = "gold";
         event.cancelBubble = true;
@@ -180,7 +172,6 @@ const makeTextGold = (event) => {
 
 hrItem1.addEventListener(`click`, (event) => {
     let childrenOfTabBody = Array.from(document.getElementsByTagName(`tbody`)[0].children);
-    console.log(lastEventTarget);
     if (childrenOfTabBody.length > 0) {
         if (lastEventTarget !== event.target) {
             clearTable();
@@ -203,9 +194,7 @@ for (let i = 0; i < is.length; i++) {
             event.target.nextElementSibling.style.display = 'none';
             event.target.classList.remove(`fa-chevron-down`);
             event.target.classList.add(`fa-chevron-right`);
-            console.log(`this i contains fa-chevron-down`);
         } else if (event.target.classList.contains(`fa-chevron-right`) && event.target.nextElementSibling) {
-            console.log(`this i contains not fa-chevron-down`);
             event.target.nextElementSibling.style.display = 'block';
             event.target.classList.remove(`fa-chevron-right`);
             event.target.classList.add(`fa-chevron-down`);
@@ -213,81 +202,62 @@ for (let i = 0; i < is.length; i++) {
     })
 }
 
-
 resetButton.addEventListener(`click`, (event) => {
     clearTable();
 });
 
-// Data
-const employers = [
-    {
-        dept_unit_id: 0,
-        id: 0,
-        name: "YarikHead",
-        tel: "123-123-3",
-        salary: 3000
-    },
-    {
-        id: 1,
-        name: "MashaLead",
-        dept_unit_id: 1,
-        tel: "123-123-3",
-        salary: 2000
-    },
-    {
-        id: 2,
-        name: "SashaLead",
-        dept_unit_id: 1,
-        tel: "123-123-3",
-        salary: 2200
-    },
-    {
-        id: 3,
-        name: "MirraDev",
-        dept_unit_id: 2,
-        tel: "123-123-3",
-        salary: 1200
-    },
-    {
-        id: 4,
-        name: "IraDev",
-        dept_unit_id: 2,
-        tel: "123-123-3",
-        salary: 1000
-    },
-    {
-        id: 5,
-        name: "DanikHead3",
-        dept_unit_id: 3,
-        tel: "123-123-33",
-        salary: 3000
-    },
-    {
-        id: 7,
-        name: "KoliaLead",
-        dept_unit_id: 4,
-        tel: "123-123-3",
-        salary: 2000
-    },
-    {
-        id: 6,
-        name: "OliaLead3",
-        dept_unit_id: 4,
-        tel: "123-123-3",
-        salary: 2200
-    },
-    {
-        id: 9,
-        name: "SienaTest",
-        dept_unit_id: 5,
-        tel: "123-123-3",
-        salary: 1000
-    },
-    {
-        id: 8,
-        name: "LenaTest",
-        dept_unit_id: 5,
-        tel: "123-123-3",
-        salary: 1200
+var select = document.createElement(`select`);
+table.before(select);
+
+var options = [];
+var currencyNames = [`BYN`, `USD`, `EUR`, `RUB`];
+for (let i = 0; i < currencyNames.length; i++) {
+    options.push(document.createElement(`option`));
+    options[i].classList.add(`option${i}`);
+    options[i].innerText = currencyNames[i];
+}
+options[0].selected = true;
+select.append(...options);
+
+select.addEventListener(`change`, function () {
+    if (select.value === currencyNames[0]) {
+        curRate = 1;
+        getCurRate(1)
+    } else if (select.value === currencyNames[1]) {
+        getCurRate(145)
+    } else if (select.value === currencyNames[2]) {
+        getCurRate(292)
+    } else {
+        getCurRate(298, 100)
     }
-];
+});
+
+async function getCurRate(id, rus = 1) {
+    var tbodyChildren = document.getElementsByTagName(`tbody`)[0].children;
+    let emps = await employers;
+    if (id !== 1 && tbodyChildren.length > 0) {
+        fetch(`http://www.nbrb.by/API/ExRates/Rates/${id}`)
+            .then(function (response) {
+                return response.json();
+            })
+            .then(async function (result) {
+                curRate = result.Cur_OfficialRate / rus;
+                for (let i = 0; i < tbodyChildren.length; i++) {
+                    let id = tbodyChildren[i].firstElementChild.innerText;
+                    let filteredEmployer = emps.filter((emp) => {
+                        return String(emp.id) === id;
+                    });
+                    tbodyChildren[i].lastElementChild.innerText = `${+(filteredEmployer[0]['salary'] / result.Cur_OfficialRate * rus).toFixed(2)}`;
+                }
+            })
+    } else if (id === 1 && tbodyChildren.length > 0) {
+        curRate = 1;
+        for (let i = 0; i < tbodyChildren.length; i++) {
+            let id = tbodyChildren[i].firstElementChild.innerText;
+            let filteredEmployer = emps.filter((emp) => {
+                return String(emp.id) === id;
+            });
+            tbodyChildren[i].lastElementChild.innerText = `${filteredEmployer[0]['salary']}`;
+        }
+    }
+}
