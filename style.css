@@ -7,9 +7,30 @@
     margin: 0 auto;
 }
 
+.header__title {
+    font-family: 'Kaushan Script', cursive;
+    text-align: center;
+    background-color: gold;
+}
+
 .hr__container {
     display: flex;
     justify-content: space-between;
+}
+
+.hr__item {
+    position: relative;
+}
+
+button {
+    position: absolute;
+    right: 0;
+    top: -21px;
+}
+select {
+    position: absolute;
+    right: 75px;
+    top: -21px
 }
 
 .hr__table {
