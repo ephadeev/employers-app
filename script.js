@@ -1,25 +1,4 @@
 "use strict";
-
-var urls = [
-    './departments/0_department.json',
-    './departments/1_department.json',
-    './departments/2_department.json',
-    './departments/3_department.json',
-    './departments/4_department.json',
-    './departments/5_department.json'
-];
-var requests = urls.map(url => {
-    return fetch(url).then(resp => resp.json());
-});
-var employers = Promise.all(requests)
-    .then(responses => {
-        return responses.reduce((acc, emp) => {
-            emp.forEach(el => {
-                acc.push(el);
-            });
-            return acc;
-        }, []);
-    });
 /** Идеи: можно сделать форму регистрации, и если залогинен админ, то будет возможность добавлять новых сотрудников.
  ** Данные по людям вынести в БД Mongo и прикрутить к проекту. */
 var depts = [
@@ -70,9 +49,8 @@ const traverseTree = (elements, parentEl) => {
 traverseTree(getTree(depts), hrTree);
 
 
-
 // Right
-var hrItem2 = document.getElementsByClassName(`hr__item`)[1],
+let hrItem2 = document.getElementsByClassName(`hr__item`)[1],
     table = document.createElement(`table`),
     curRate = 1;
 
@@ -100,59 +78,70 @@ const makeTableHead = (parentElement) => {
 };
 makeTableHead(hrItem2);
 
-var tbody = document.createElement(`tbody`);
-table.appendChild(tbody);
 
 var hrItem1 = document.getElementsByClassName(`hr__item`)[0];
 
 var resetButton = document.createElement(`button`);
 resetButton.innerText = `Reset`;
 
-
-let clearTable = () => {
-    let childrenOfTableBody = Array.from(document.getElementsByTagName(`tbody`)[0].children);
-    for (let childElement of childrenOfTableBody) {
-        childElement.remove();
-    }
+let removeNode = (node) => {
+    node.remove();
 };
 
 var lastEventTarget = null;
 
-async function addDataInTable(event) {
-    lastEventTarget = event.target;
-    let emps = await employers;
-    let filteredEmployers = emps.filter((employer) => {
-        return String(employer.dept_unit_id) === event.target.dataset.id;
-    });
+function getData(id) {
+    if (id) {
+        return fetch(`./departments/${id}_department.json`)
+            .then(resp => resp.json());
+    }
+}
 
-    filteredEmployers.forEach((emp) => {
-        let tr = document.createElement(`tr`);
-        tbody.append(tr);
-        let tds = [];
-        for (let i = 0; i < 4; i++) {
-            tds.push(document.createElement(`td`));
-        }
-        tr.append(...tds);
-        tds.forEach((elem, index) => {
-            switch (index) {
-                case 0:
-                    elem.innerText = `${emp.id}`;
-                    break;
-                case 1:
-                    elem.innerText = `${emp.name}`;
-                    break;
-                case 2:
-                    elem.innerText = `${emp.tel}`;
-                    break;
-                case 3:
-                    elem.innerText = `${(emp.salary / curRate).toFixed(2)}`;
-                    break;
-            }
+function addDataInTable(event) {
+    lastEventTarget = event.target;
+    getData(event.target.dataset.id)
+        .then(employers => { // пофиксить, вываливаеться error (сделать проверку что getData() не возвращает undefined)
+            let tbody = document.createElement(`tbody`);
+            table.appendChild(tbody);
+            console.log(employers);
+            employers.forEach((emp) => {
+                let tr = document.createElement(`tr`);
+                tbody.append(tr);
+                let tds = [];
+                for (let i = 0; i < 4; i++) {
+                    tds.push(document.createElement(`td`));
+                }
+                tr.append(...tds);
+                // можно пробежаться по массиву headerText = [`ID`, `Name`, `Telephone`, `Salary`];
+                // т.е. изначально его определив как и ключи в объекте имплоера типа
+                // ['id', 'name', 'telephone', 'salary']
+                // но при построении дерева определи еще один map типа
+                // let a = {'id': 'ID', 'name': 'Name'}
+                // а тут просто проверять salary это или нет, так как если добавть еще одно поле,
+                // придется писать еще один случай. это называется говнокод
+                tds.forEach((elem, index) => {
+                    switch (index) {
+                        case 0:
+                            elem.innerText = `${emp.id}`;
+                            break;
+                        case 1:
+                            elem.innerText = `${emp.name}`;
+                            break;
+                        case 2:
+                            elem.innerText = `${emp.tel}`;
+                            break;
+                        case 3:
+                            elem.innerText = `${(emp.salary / curRate).toFixed(2)}`;
+                            break;
+                    }
+                });
+            });
         });
-    });
+
 }
 
 var otherLastEventTarget = null;
+// норм но лучше шеврон не выделять)
 const makeTextGold = (event) => {
     if (!otherLastEventTarget) {
         otherLastEventTarget = event.target;
@@ -171,10 +160,9 @@ const makeTextGold = (event) => {
 };
 
 hrItem1.addEventListener(`click`, (event) => {
-    let childrenOfTabBody = Array.from(document.getElementsByTagName(`tbody`)[0].children);
-    if (childrenOfTabBody.length > 0) {
+    if (document.getElementsByTagName(`tbody`).length > 0) {
         if (lastEventTarget !== event.target) {
-            clearTable();
+            removeNode(document.getElementsByTagName(`tbody`)[0]);
             addDataInTable(event);
         }
     } else {
@@ -188,6 +176,8 @@ hrItem1.addEventListener(`click`, (event) => {
 });
 
 var is = document.getElementsByClassName(`fas`);
+// можно просто проверить, что кликнутый элемент содержит класс fas,
+// а то слишком много листенеров вешается, лучше на корневом обрабатывать
 for (let i = 0; i < is.length; i++) {
     is[i].addEventListener(`click`, (event) => {
         if (event.target.classList.contains(`fa-chevron-down`) && event.target.nextElementSibling) {
@@ -203,7 +193,7 @@ for (let i = 0; i < is.length; i++) {
 }
 
 resetButton.addEventListener(`click`, (event) => {
-    clearTable();
+    removeNode(document.getElementsByTagName(`tbody`)[0]);
 });
 
 var select = document.createElement(`select`);
@@ -218,7 +208,16 @@ for (let i = 0; i < currencyNames.length; i++) {
 }
 options[0].selected = true;
 select.append(...options);
-
+/**
+ * magic numbers
+ * сделай мапу
+ * {
+ *  BYN: 123,
+ *  USD: 124
+ * }
+ *
+ * а то это жесть :)
+ */
 select.addEventListener(`change`, function () {
     if (select.value === currencyNames[0]) {
         curRate = 1;
@@ -235,6 +234,13 @@ select.addEventListener(`change`, function () {
 async function getCurRate(id, rus = 1) {
     var tbodyChildren = document.getElementsByTagName(`tbody`)[0].children;
     let emps = await employers;
+    /**
+     * сделай одну функцию на получение только
+     * тут ты получаешь рейт и передаёшь его в функцию, где строится таблица
+     * у тебя каша получается, которую сложно переписывать
+     * А если мы вдруг иначе получать будем рейт? Тогда всё опять нужно читать и переписывать, а
+     * так просто один метод
+     */
     if (id !== 1 && tbodyChildren.length > 0) {
         fetch(`http://www.nbrb.by/API/ExRates/Rates/${id}`)
             .then(function (response) {
