@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "dev": "nodemon server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -19,5 +20,8 @@
   "homepage": "https://github.com/ephadeev/employers-app#readme",
   "dependencies": {
     "node-static": "^0.7.11"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.3"
   }
 }
