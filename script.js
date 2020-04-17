@@ -99,45 +99,46 @@ function getData(id) {
 
 function addDataInTable(event) {
     lastEventTarget = event.target;
-    getData(event.target.dataset.id)
-        .then(employers => { // пофиксить, вываливаеться error (сделать проверку что getData() не возвращает undefined)
-            let tbody = document.createElement(`tbody`);
-            table.appendChild(tbody);
-            console.log(employers);
-            employers.forEach((emp) => {
-                let tr = document.createElement(`tr`);
-                tbody.append(tr);
-                let tds = [];
-                for (let i = 0; i < 4; i++) {
-                    tds.push(document.createElement(`td`));
-                }
-                tr.append(...tds);
-                // можно пробежаться по массиву headerText = [`ID`, `Name`, `Telephone`, `Salary`];
-                // т.е. изначально его определив как и ключи в объекте имплоера типа
-                // ['id', 'name', 'telephone', 'salary']
-                // но при построении дерева определи еще один map типа
-                // let a = {'id': 'ID', 'name': 'Name'}
-                // а тут просто проверять salary это или нет, так как если добавть еще одно поле,
-                // придется писать еще один случай. это называется говнокод
-                tds.forEach((elem, index) => {
-                    switch (index) {
-                        case 0:
-                            elem.innerText = `${emp.id}`;
-                            break;
-                        case 1:
-                            elem.innerText = `${emp.name}`;
-                            break;
-                        case 2:
-                            elem.innerText = `${emp.tel}`;
-                            break;
-                        case 3:
-                            elem.innerText = `${(emp.salary / curRate).toFixed(2)}`;
-                            break;
+    if (event.target.dataset.id) {
+        getData(event.target.dataset.id)
+            .then(employers => {
+                let tbody = document.createElement(`tbody`);
+                table.appendChild(tbody);
+                console.log(employers);
+                employers.forEach((emp) => {
+                    let tr = document.createElement(`tr`);
+                    tbody.append(tr);
+                    let tds = [];
+                    for (let i = 0; i < 4; i++) {
+                        tds.push(document.createElement(`td`));
                     }
+                    tr.append(...tds);
+                    // можно пробежаться по массиву headerText = [`ID`, `Name`, `Telephone`, `Salary`];
+                    // т.е. изначально его определив как и ключи в объекте имплоера типа
+                    // ['id', 'name', 'telephone', 'salary']
+                    // но при построении дерева определи еще один map типа
+                    // let a = {'id': 'ID', 'name': 'Name'}
+                    // а тут просто проверять salary это или нет, так как если добавть еще одно поле,
+                    // придется писать еще один случай. это называется говнокод
+                    tds.forEach((elem, index) => {
+                        switch (index) {
+                            case 0:
+                                elem.innerText = `${emp.id}`;
+                                break;
+                            case 1:
+                                elem.innerText = `${emp.name}`;
+                                break;
+                            case 2:
+                                elem.innerText = `${emp.tel}`;
+                                break;
+                            case 3:
+                                elem.innerText = `${(emp.salary / curRate).toFixed(2)}`;
+                                break;
+                        }
+                    });
                 });
             });
-        });
-
+    }
 }
 
 var otherLastEventTarget = null;
@@ -201,9 +202,16 @@ table.before(select);
 
 var options = [];
 var currencyNames = [`BYN`, `USD`, `EUR`, `RUB`];
+
+let mapCurrencies = new Map([
+    ['BYN', 1],
+    ['USD', 145],
+    ['EUR', 292],
+    ['RUB', 298]
+]);
+
 for (let i = 0; i < currencyNames.length; i++) {
     options.push(document.createElement(`option`));
-    options[i].classList.add(`option${i}`);
     options[i].innerText = currencyNames[i];
 }
 options[0].selected = true;
@@ -218,52 +226,47 @@ select.append(...options);
  *
  * а то это жесть :)
  */
-select.addEventListener(`change`, function () {
-    if (select.value === currencyNames[0]) {
-        curRate = 1;
-        getCurRate(1)
-    } else if (select.value === currencyNames[1]) {
-        getCurRate(145)
-    } else if (select.value === currencyNames[2]) {
-        getCurRate(292)
-    } else {
-        getCurRate(298, 100)
-    }
-});
 
-async function getCurRate(id, rus = 1) {
-    var tbodyChildren = document.getElementsByTagName(`tbody`)[0].children;
-    let emps = await employers;
-    /**
-     * сделай одну функцию на получение только
-     * тут ты получаешь рейт и передаёшь его в функцию, где строится таблица
-     * у тебя каша получается, которую сложно переписывать
-     * А если мы вдруг иначе получать будем рейт? Тогда всё опять нужно читать и переписывать, а
-     * так просто один метод
-     */
-    if (id !== 1 && tbodyChildren.length > 0) {
-        fetch(`http://www.nbrb.by/API/ExRates/Rates/${id}`)
-            .then(function (response) {
-                return response.json();
-            })
-            .then(async function (result) {
-                curRate = result.Cur_OfficialRate / rus;
-                for (let i = 0; i < tbodyChildren.length; i++) {
-                    let id = tbodyChildren[i].firstElementChild.innerText;
-                    let filteredEmployer = emps.filter((emp) => {
-                        return String(emp.id) === id;
-                    });
-                    tbodyChildren[i].lastElementChild.innerText = `${+(filteredEmployer[0]['salary'] / result.Cur_OfficialRate * rus).toFixed(2)}`;
-                }
-            })
-    } else if (id === 1 && tbodyChildren.length > 0) {
-        curRate = 1;
-        for (let i = 0; i < tbodyChildren.length; i++) {
-            let id = tbodyChildren[i].firstElementChild.innerText;
-            let filteredEmployer = emps.filter((emp) => {
-                return String(emp.id) === id;
-            });
-            tbodyChildren[i].lastElementChild.innerText = `${filteredEmployer[0]['salary']}`;
+
+const getCurRate = (id) => {
+    return fetch(`http://www.nbrb.by/API/ExRates/Rates/${id}`)
+        .then(function (response) {
+            return response.json();
+        })
+};
+
+select.addEventListener(`change`, (event) => {
+    let tbodyChildren = document.getElementsByTagName(`tbody`)[0].children;
+    if (tbodyChildren.length > 0) {
+        if (select.value === 'BYN') {
+            curRate = 1;
+            getData(otherLastEventTarget.dataset.id)
+                .then(employers => {
+                    for (let i = 0; i < tbodyChildren.length; i++) {
+                        tbodyChildren[i].lastElementChild.innerText = `${employers[i]['salary'].toFixed(2)}`;
+                    }
+                });
+        } else {
+            getCurRate(mapCurrencies.get(select.value))
+                .then((result) => {
+                    if (select.value === 'RUB') {
+                        curRate = result.Cur_OfficialRate / 100;
+                        getData(otherLastEventTarget.dataset.id)
+                            .then(employers => {
+                                for (let i = 0; i < tbodyChildren.length; i++) {
+                                    tbodyChildren[i].lastElementChild.innerText = `${(employers[i]['salary'] / result.Cur_OfficialRate * 100).toFixed(2)}`;
+                                }
+                            })
+                    } else {
+                        curRate = result.Cur_OfficialRate;
+                        getData(otherLastEventTarget.dataset.id)
+                            .then(employers => {
+                                for (let i = 0; i < tbodyChildren.length; i++) {
+                                    tbodyChildren[i].lastElementChild.innerText = `${(employers[i]['salary'] / result.Cur_OfficialRate).toFixed(2)}`;
+                                }
+                            })
+                    }
+                })
         }
     }
-}
+});
