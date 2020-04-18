@@ -84,8 +84,10 @@ var hrItem1 = document.getElementsByClassName(`hr__item`)[0];
 var resetButton = document.createElement(`button`);
 resetButton.innerText = `Reset`;
 
-let removeNode = (node) => {
-    node.remove();
+const removeNode = (node) => {
+    if (node) {
+        node.remove();
+    }
 };
 
 var lastEventTarget = null;
@@ -104,7 +106,6 @@ function addDataInTable(event) {
             .then(employers => {
                 let tbody = document.createElement(`tbody`);
                 table.appendChild(tbody);
-                console.log(employers);
                 employers.forEach((emp) => {
                     let tr = document.createElement(`tr`);
                     tbody.append(tr);
@@ -197,11 +198,8 @@ resetButton.addEventListener(`click`, (event) => {
     removeNode(document.getElementsByTagName(`tbody`)[0]);
 });
 
-var select = document.createElement(`select`);
+let select = document.createElement(`select`);
 table.before(select);
-
-var options = [];
-var currencyNames = [`BYN`, `USD`, `EUR`, `RUB`];
 
 let mapCurrencies = new Map([
     ['BYN', 1],
@@ -209,24 +207,14 @@ let mapCurrencies = new Map([
     ['EUR', 292],
     ['RUB', 298]
 ]);
-
-for (let i = 0; i < currencyNames.length; i++) {
-    options.push(document.createElement(`option`));
-    options[i].innerText = currencyNames[i];
+let options = [];
+for (let currency of mapCurrencies.keys()) {
+    let option = document.createElement(`option`);
+    options.push(option);
+    option.innerText = currency;
 }
 options[0].selected = true;
 select.append(...options);
-/**
- * magic numbers
- * сделай мапу
- * {
- *  BYN: 123,
- *  USD: 124
- * }
- *
- * а то это жесть :)
- */
-
 
 const getCurRate = (id) => {
     return fetch(`http://www.nbrb.by/API/ExRates/Rates/${id}`)
@@ -236,35 +224,53 @@ const getCurRate = (id) => {
 };
 
 select.addEventListener(`change`, (event) => {
-    let tbodyChildren = document.getElementsByTagName(`tbody`)[0].children;
-    if (tbodyChildren.length > 0) {
+    if (document.getElementsByTagName(`tbody`).length > 0) {
+        let tbodyChildren = document.getElementsByTagName(`tbody`)[0].children;
+        if (tbodyChildren.length > 0) {
+            if (select.value === 'BYN') {
+                curRate = 1;
+                getData(otherLastEventTarget.dataset.id)
+                    .then(employers => {
+                        for (let i = 0; i < tbodyChildren.length; i++) {
+                            let emplSalary = employers[i]['salary'].toFixed(2);
+                            tbodyChildren[i].lastElementChild.innerText = `${emplSalary}`;
+                        }
+                    });
+            } else {
+                getCurRate(mapCurrencies.get(select.value))
+                    .then((result) => {
+                        if (select.value === 'RUB') {
+                            curRate = result.Cur_OfficialRate / 100;
+                            getData(otherLastEventTarget.dataset.id)
+                                .then(employers => {
+                                    for (let i = 0; i < tbodyChildren.length; i++) {
+                                        let emplSalary = (employers[i]['salary'] / result.Cur_OfficialRate * 100).toFixed(2);
+                                        tbodyChildren[i].lastElementChild.innerText = `${emplSalary}`;
+                                    }
+                                })
+                        } else {
+                            curRate = result.Cur_OfficialRate;
+                            getData(otherLastEventTarget.dataset.id)
+                                .then(employers => {
+                                    for (let i = 0; i < tbodyChildren.length; i++) {
+                                        let emplSalary = (employers[i]['salary'] / result.Cur_OfficialRate).toFixed(2);
+                                        tbodyChildren[i].lastElementChild.innerText = `${emplSalary}`;
+                                    }
+                                })
+                        }
+                    })
+            }
+        }
+    } else {
         if (select.value === 'BYN') {
             curRate = 1;
-            getData(otherLastEventTarget.dataset.id)
-                .then(employers => {
-                    for (let i = 0; i < tbodyChildren.length; i++) {
-                        tbodyChildren[i].lastElementChild.innerText = `${employers[i]['salary'].toFixed(2)}`;
-                    }
-                });
         } else {
             getCurRate(mapCurrencies.get(select.value))
                 .then((result) => {
                     if (select.value === 'RUB') {
                         curRate = result.Cur_OfficialRate / 100;
-                        getData(otherLastEventTarget.dataset.id)
-                            .then(employers => {
-                                for (let i = 0; i < tbodyChildren.length; i++) {
-                                    tbodyChildren[i].lastElementChild.innerText = `${(employers[i]['salary'] / result.Cur_OfficialRate * 100).toFixed(2)}`;
-                                }
-                            })
                     } else {
                         curRate = result.Cur_OfficialRate;
-                        getData(otherLastEventTarget.dataset.id)
-                            .then(employers => {
-                                for (let i = 0; i < tbodyChildren.length; i++) {
-                                    tbodyChildren[i].lastElementChild.innerText = `${(employers[i]['salary'] / result.Cur_OfficialRate).toFixed(2)}`;
-                                }
-                            })
                     }
                 })
         }
