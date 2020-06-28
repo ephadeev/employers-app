@@ -217,7 +217,7 @@ options[0].selected = true;
 select.append(...options);
 
 const getCurRate = (id) => {
-    return fetch(`http://www.nbrb.by/API/ExRates/Rates/${id}`)
+    return fetch(`https://www.nbrb.by/API/ExRates/Rates/${id}`)
         .then(function (response) {
             return response.json();
         })
